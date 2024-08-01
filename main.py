@@ -3,25 +3,22 @@ import os
 from fastapi import FastAPI, HTTPException, Request
 import openai
 import requests
-import deepl
 import json
 import uvicorn
-from pyngrok import ngrok
-import threading
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
-NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
+# NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
 
 openai.api_key = OPENAI_API_KEY
 DEEPL_API_URL = 'https://api-free.deepl.com/v2/translate'
 
 app = FastAPI()
 
-# CORS 설정 
+# CORS 설정
 origins = ["http://localhost:3000", "https://sproupt.vercel.app"]
 app.add_middleware(
     CORSMiddleware,
@@ -79,14 +76,10 @@ async def chat_with_gpt(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ngrok 설정 및 FastAPI 실행
-ngrok.set_auth_token(NGROK_AUTH_TOKEN)
-public_url = ngrok.connect(8001)  # 포트를 8001로 변경
-print(f"Public URL: {public_url}")
+if __name__ == "__main__":
+    # `ngrok` 설정을 주석 처리하여 문제를 격리
+    # ngrok.set_auth_token(NGROK_AUTH_TOKEN)
+    # public_url = ngrok.connect(8000)  # 포트를 8000으로 변경
+    # print(f"Public URL: {public_url}")
 
-def run():
-    uvicorn.run(app, host="0.0.0.0", port=8001)  # 포트를 8001로 변경
-
-# FastAPI 서버를 별도의 스레드에서 실행
-thread = threading.Thread(target=run)
-thread.start()
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # 포트를 8000으로 변경
