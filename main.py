@@ -12,13 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-
-
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
-
 
 openai.api_key = OPENAI_API_KEY
 DEEPL_API_URL = 'https://api-free.deepl.com/v2/translate'
@@ -26,8 +22,14 @@ DEEPL_API_URL = 'https://api-free.deepl.com/v2/translate'
 app = FastAPI()
 
 # CORS 설정 
-origins = [ "http://localhost:3000", "https://sproupt.vercel.app/"] 
-app.add_middleware( CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"], )
+origins = ["http://localhost:3000", "https://sproupt.vercel.app"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def translate_text(text, target_lang):
     data = {
@@ -49,6 +51,15 @@ def get_gpt_response(prompt):
     )
     return response.choices[0].message.content
 
+def handle_user_query(user_query):
+    translated_text = translate_text(user_query, target_lang="KO")
+    print("user: ", translated_text)
+
+    gpt_response_korean = get_gpt_response(translated_text)
+    gpt_response_chinese = translate_text(gpt_response_korean, target_lang="ZH")
+
+    return gpt_response_korean, gpt_response_chinese
+
 @app.post("/api/chat")
 async def chat_with_gpt(request: Request):
     try:
@@ -58,19 +69,23 @@ async def chat_with_gpt(request: Request):
         if not prompt:
             raise HTTPException(status_code=400, detail="Prompt is required")
 
-        #사용자 질문 전달
-        gpt_response = get_gpt_response(prompt)
-        return {"response": gpt_response}
+        # 사용자 질문 전달 및 번역 처리
+        gpt_response_korean, gpt_response_chinese = handle_user_query(prompt)
+
+        return {
+            "korean_response": gpt_response_korean,
+            "chinese_response": gpt_response_chinese
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # ngrok 설정 및 FastAPI 실행
 ngrok.set_auth_token(NGROK_AUTH_TOKEN)
-public_url = ngrok.connect(8000)
+public_url = ngrok.connect(8001)  # 포트를 8001로 변경
 print(f"Public URL: {public_url}")
 
 def run():
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)  # 포트를 8001로 변경
 
 # FastAPI 서버를 별도의 스레드에서 실행
 thread = threading.Thread(target=run)
