@@ -8,8 +8,12 @@ import json
 import uvicorn
 from pyngrok import ngrok
 import threading
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
+
+
+
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
@@ -20,6 +24,10 @@ openai.api_key = OPENAI_API_KEY
 DEEPL_API_URL = 'https://api-free.deepl.com/v2/translate'
 
 app = FastAPI()
+
+# CORS 설정 
+origins = [ "http://localhost:3000", "https://sproupt.vercel.app/"] 
+app.add_middleware( CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"], )
 
 def translate_text(text, target_lang):
     data = {
@@ -50,7 +58,7 @@ async def chat_with_gpt(request: Request):
         if not prompt:
             raise HTTPException(status_code=400, detail="Prompt is required")
 
-        # GPT에게 사용자 질문 전달
+        #사용자 질문 전달
         gpt_response = get_gpt_response(prompt)
         return {"response": gpt_response}
     except Exception as e:
